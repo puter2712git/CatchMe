@@ -5,11 +5,15 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour {
   private Rigidbody m_rigidbody;
   private AudioSource m_audio;
+  private Renderer m_renderer;
 
   private float horizontalMove;
   private float verticalMove;
+  private float fire1;
   private float m_speed = 10f;
   private float m_health = 100f;
+  private bool isDamaged = false;
+  private bool isJumping = false;
 
   private int m_foodCount = 0;
 
@@ -19,11 +23,13 @@ public class PlayerController : MonoBehaviour {
   void Start() {
     m_rigidbody = GetComponent<Rigidbody>();
     m_audio = GetComponent<AudioSource>();
+    m_renderer = GetComponent<MeshRenderer>();
   }
 
   void Update() {
     horizontalMove = Input.GetAxis("Horizontal");
     verticalMove = Input.GetAxis("Vertical");
+    fire1 = Input.GetAxis("Fire1");
 
     if (Input.GetKeyDown(KeyCode.P)) {
       switch (Time.timeScale) {
@@ -36,6 +42,14 @@ public class PlayerController : MonoBehaviour {
       }
     }
 
+    if (Input.GetKeyDown(KeyCode.Space)) {
+      StartCoroutine(SpeedUpBoost(20f));
+    }
+
+    if (Input.GetKeyDown(KeyCode.H)) {
+      StartCoroutine(Invisible());
+    }
+
     if (m_health <= 0f) {
       UnityEditor.EditorApplication.isPlaying = false;
     }
@@ -44,6 +58,11 @@ public class PlayerController : MonoBehaviour {
   void FixedUpdate() {
     if (horizontalMove != 0 || verticalMove != 0) {
       m_rigidbody.AddForce(-verticalMove * m_speed, 0f, horizontalMove * m_speed);
+    }
+
+    if (fire1 != 0 && !isJumping) {
+      isJumping = true;
+      m_rigidbody.AddForce(Vector3.up * m_speed, ForceMode.Impulse);
     }
   }
 
@@ -62,7 +81,7 @@ public class PlayerController : MonoBehaviour {
       m_foodCount++;
       Debug.Log("You have collected " + m_foodCount + " foods.");
     }
-    else if (other.gameObject.CompareTag("NonFood")) {
+    else if (other.gameObject.CompareTag("NonFood") && !isDamaged) {
       m_audio.PlayOneShot(failureClip);
       m_health -= 5f;
       Debug.Log("You tried to eat non-edible item...");
@@ -72,16 +91,34 @@ public class PlayerController : MonoBehaviour {
   }
 
   IEnumerator HealthDecreased() {
+    isDamaged = true;
     yield return new WaitForSeconds(1f);
+    isDamaged = false;
   }
 
   private void OnCollisionEnter(Collision other) {
-    if (other.gameObject.CompareTag("Enemy")) {
+    if (other.gameObject.CompareTag("Enemy") && !isDamaged) {
       m_audio.PlayOneShot(failureClip);
       m_health -= 15f;
       Debug.Log("Health left: " + m_health);
       StartCoroutine(HealthDecreased());
     }
+
+    if (other.gameObject.CompareTag("Ground")) {
+      isJumping = false;
+    }
+  }
+
+  IEnumerator SpeedUpBoost(float speedUpAmount) {
+    m_speed = speedUpAmount;
+    yield return new WaitForSeconds(2f);
+    m_speed = 10f;
+  }
+
+  IEnumerator Invisible() {
+    m_renderer.enabled = false;
+    yield return new WaitForSeconds(3f);
+    m_renderer.enabled = true;
   }
 }
 

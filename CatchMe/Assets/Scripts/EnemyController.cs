@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class EnemyController : MonoBehaviour {
   public Transform target;
+  private Vector3 targetPosition;
+  public MeshRenderer targetRenderer;
   private float speed = 1.0f;
 
   private GameObject[] enemies;
@@ -14,10 +16,13 @@ public class EnemyController : MonoBehaviour {
 
   void Update() {
     for (int i = 0; i < enemies.Length; i++) {
-      enemies[i].transform.LookAt(target);
-
-      Vector3 movement = new Vector3(0, 0, speed * Time.deltaTime);
-      enemies[i].transform.Translate(movement);
+      if (targetRenderer.enabled == true) {
+        targetPosition = new Vector3(target.transform.position.x, enemies[i].transform.position.y, target.transform.position.z);
+        enemies[i].transform.LookAt(targetPosition);;
+   
+        Vector3 movement = new Vector3(0, 0, speed * Time.deltaTime);
+        enemies[i].transform.Translate(movement);
+      }
     }
   }
 }
